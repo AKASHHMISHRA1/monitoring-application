@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    
+     <link rel="stylesheet" href="index.css">
+     <script type="text/javascript" src="index.js"></script>
+     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" integrity="sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ0Z" crossorigin="anonymous">
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js" integrity="sha384-9/reFTGAW83EW2RDu2S0VKaIzap3H66lZH81PoYlFhbGU+6BZp6G7niu735Sk7lN" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js" integrity="sha384-B4gt1jrGC7Jh4AgTPSdUtOBvfO8shuf57BaghqFfPlYxofvL8/KUEfYiJOMMV+rV" crossorigin="anonymous"></script>
+  <style>
+    #map{
+      height:400px;
+      width:100%;
+    }
+    #map2{
+      height:400px;
+      width:100%;
+      color:blue;
+    }
+    
+  </style>
+  </head>
+  <body>
+    <h3>Show Employer Status</h3>
+    <!--The div element for the map -->
+    
+    <p id="demo"></p>
+    <div id="map"></div>
+    <input type="text" placeholder="Name of the user" id="text">
+    <button class="btn btn-primary"onclick="d()">show position of user</button>
+    <div id="map2"></div>
+    <div id="log"></div>
+    <!-- Async script executes immediately and must be after any DOM elements used in callback. -->
+    <script
+      src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCSrhm1qyYcaKBMQ7EOT9rCCjNZqqqf3y4&callback=initMap&libraries=&v=weekly"
+      async
+    ></script>
+    
+    <script>
+        const x = document.getElementById("demo");
+        var sock=new WebSocket("ws://localhost:5001");
+        var log=document.getElementById('log');
+        var obj=[];
+        var history_detail=[];
+        sock.onmessage=function(event){
+        console.log(event);
+        const detailArray=(event.data).split(",");
+        
+        detailArray[1]=Number(detailArray[1]);
+        detailArray[2]=Number(detailArray[2]);
+        if("Aditya"==detailArray[0]){
+            detailArray[2]=80;
+        }
+        var check=0;
+        var par_={name:detailArray[0],lat:detailArray[1],lng:detailArray[2]};
+        for(i=0;i<obj.length;i++){
+          if(obj[i].name==detailArray[0]){
+            obj[i].lat=detailArray[1];
+            obj[i].lng=detailArray[2];
+            history_detail[i].add.push({lat:detailArray[1],lng:detailArray[2]});
+            check=1;
+          }
+        }
+        if(check==0){
+          obj.push(par_);
+          alert(detailArray[0]+" starts sharing their location just Now");
+          history_detail.push({name:detailArray[0],add:[{lat:detailArray[1],lng:detailArray[2]}]});
+          sock.send("1st");
+        }
+        
+        log.innerHTML+=detailArray+"<br>";
+        initMap(28.644869499999996,77.06547,obj,history_detail);
+        }
+        /*function getLocation() {
+          if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(showPosition);
+          } else { 
+            x.innerHTML = "Geolocation is not supported by this browser.";
+          }
+          setTimeout(function(){getLocation();},5000);
+        }*/
+        function initMap(a,b,obj) {
+            // The location of Uluru
+            const uluru = { lat: a, lng: b };
+            // The map, centered at Uluru
+            const map = new google.maps.Map(document.getElementById("map"), {
+            zoom: 10,
+            center: uluru,
+            });
+            // The marker, positioned at Uluru
+            var infowindow = new google.maps.InfoWindow();
+
+            var marker, i;
+            
+            for(i=0;i<obj.length;i++) {
+              sock.send("add_marker");
+              marker = new google.maps.Marker({
+              position:new google.maps.LatLng(obj[i].lat,obj[i].lng),
+              map: map,
+              });
+              sock.send(i);
+              google.maps.event.addListener(marker, 'click', (function(marker, i) {
+              return function() {
+              infowindow.setContent(obj[i].name);
+              infowindow.open(map, marker);
+              }
+              })(marker, i));
+
+            }
+            
+        }
+        function showPosition(position) {
+          x.innerHTML += "Latitude: " + position.coords.latitude + 
+          "<br>Longitude: " + position.coords.longitude;
+          initMap(position.coords.latitude,position.coords.longitude);
+
+        }
+
+
+        function d(){
+              var text=document.getElementById('text').value;
+              const uluru = { lat: 28.644869399999997, lng: 77.0654744 };
+              // The map, centered at Uluru
+
+              const map = new google.maps.Map(document.getElementById("map2"), {
+              zoom: 10,
+              center: uluru,
+              });
+
+              var infowindow = new google.maps.InfoWindow();
+
+              var marker, i;
+              sock.send(text+" "+history_detail.length);
+              var i=0,j=0;
+              for(i=0;i<history_detail.length;i++){
+                //sock.send("i "+i);
+                if(history_detail[i].name==text){
+                    var arr=history_detail[i].add;
+                    for(j=0;j<arr.length;j++){
+                      sock.send("j "+j);
+                      marker = new google.maps.Marker({
+                      position:new google.maps.LatLng(arr[j].lat,arr[j].lng+j),
+                      map: map,
+                      });
+                      
+
+                      google.maps.event.addListener(marker, 'click', (function(marker, i) {
+                      return function() {
+                      infowindow.setContent(history_detail[i].name);
+                      infowindow.open(map, marker);
+                      }
+                      })(marker, i));
+                    }
+                }
+              }
+        }
+    </script>
+  </body>
+</html>

@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    
+     <link rel="stylesheet" href="index.css">
+     <script type="text/javascript" src="index.js"></script>
+     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" integrity="sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ0Z" crossorigin="anonymous">
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js" integrity="sha384-9/reFTGAW83EW2RDu2S0VKaIzap3H66lZH81PoYlFhbGU+6BZp6G7niu735Sk7lN" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js" integrity="sha384-B4gt1jrGC7Jh4AgTPSdUtOBvfO8shuf57BaghqFfPlYxofvL8/KUEfYiJOMMV+rV" crossorigin="anonymous"></script>
+  <style>
+    #map{
+      height:400px;
+      width:100%;
+    }
+  </style>
+  </head>
+  <body>
+    <h3>My Google Maps Demo</h3>
+    <!--The div element for the map -->
+    <button class="btn btn-primary"onclick="getLocation()">Allow for location Sharing</button>
+    <p id="demo"></p>
+    <div id="map"></div>
+    <div id="log"></div>
+    <!-- Async script executes immediately and must be after any DOM elements used in callback. -->
+    <script
+      src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCSrhm1qyYcaKBMQ7EOT9rCCjNZqqqf3y4&callback=initMap&libraries=&v=weekly"
+      async
+    ></script>
+    <script>
+        const x = document.getElementById("demo");
+        var sock=new WebSocket("ws://localhost:5001");
+        var log=document.getElementById('log');
+        /*sock.onmessage=function(event){
+           console.log(event);
+           log.innerHTML+=event.data+"<br>";
+           alert(event.data);
+        }*/
+
+
+        function getLocation() {
+          if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(showPosition);
+          } else { 
+            x.innerHTML = "Geolocation is not supported by this browser.";
+          }
+          setTimeout(function(){getLocation();},5000);
+        }
+        function initMap(a,b) {
+            // The location of Uluru
+            const uluru = { lat: a, lng: b };
+            // The map, centered at Uluru
+            const map = new google.maps.Map(document.getElementById("map"), {
+            zoom: 200,
+            center: uluru,
+            });
+            // The marker, positioned at Uluru
+            const marker = new google.maps.Marker({
+            position: uluru,
+            map: map,
+            });
+        }
+        function showPosition(position) {
+          x.innerHTML += "Latitude: " + position.coords.latitude + 
+          "<br>Longitude: " + position.coords.longitude;
+          var text="Aditya,"+position.coords.latitude + 
+          "," + position.coords.longitude;
+          
+          sock.send(text);
+          console.log();
+          initMap(position.coords.latitude,position.coords.longitude);
+
+        }
+    </script>
+
+  </body>
+</html>
